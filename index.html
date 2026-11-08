@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Realtors Directory & Live Research Search</title>
+  <meta name="description" content="Live search and interactive UI for Realtors research database with instant lookups for name, mobile, areas, and last sold properties.">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col antialiased">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-30 glass-header border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Brand / Title -->
+        <div class="flex items-center space-x-3">
+          <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 font-bold text-lg">
+            🏢
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h1 class="font-extrabold text-lg sm:text-xl text-slate-900 tracking-tight">RealtorScope</h1>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800">
+                Live Data
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 hidden sm:block">Davis Prospects &amp; Realtor Research Directory</p>
+          </div>
+        </div>
+
+        <!-- Sync status & actions -->
+        <div class="flex items-center space-x-3">
+          
+          <!-- Live Status Indicator -->
+          <div id="syncStatusBadge" class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
+            <span class="h-2 w-2 rounded-full bg-emerald-500 pulse-dot"></span>
+            <span id="syncStatusText">Synced with Google Sheet</span>
+            <span id="syncTimestamp" class="text-emerald-600 font-mono text-[11px] ml-1"></span>
+          </div>
+
+          <!-- Manual Sync Button -->
+          <button id="syncBtn" class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50/50 shadow-sm transition text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500" title="Fetch newest updates from live Google Sheet">
+            <svg id="syncIcon" class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span id="syncBtnText">Sync Now</span>
+          </button>
+
+          <!-- Sheet Direct Link -->
+          <a href="https://docs.google.com/spreadsheets/d/1w7GbikvxTk7eJoNONTOsaHn3M7OzuLrJ/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="hidden md:inline-flex items-center space-x-1 px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition text-xs font-medium" title="Open source Google Sheet">
+            <span>Google Sheet</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+          </a>
+
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- Search & Filters Card -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-6">
+      
+      <!-- Primary Search Bar -->
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+        <input 
+          type="text" 
+          id="searchInput" 
+          class="block w-full pl-11 pr-24 py-3.5 text-slate-900 placeholder-slate-400 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base sm:text-lg transition" 
+          placeholder="Search by Realtor Name, Mobile, Phone, City, Suburbs, Last Sold Address..."
+          autocomplete="off"
+        >
+        
+        <div class="absolute inset-y-0 right-0 pr-3 flex items-center space-x-1">
+          <button id="clearSearchBtn" class="hidden text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200 transition" title="Clear search">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+          <kbd class="hidden sm:inline-block px-2 py-1 text-xs font-mono text-slate-400 bg-white border border-slate-200 rounded-md shadow-2xs">/</kbd>
+        </div>
+      </div>
+
+      <!-- Quick Filter Pills -->
+      <div class="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-1">Quick Filters:</span>
+        
+        <!-- Active Only Toggle -->
+        <button id="filterActiveBtn" class="quick-filter-btn px-3 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-emerald-300 hover:text-emerald-700 bg-white transition flex items-center space-x-1.5" data-filter="active">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>Active Only</span>
+        </button>
+
+        <!-- Licensed Only Toggle -->
+        <button id="filterLicensedBtn" class="quick-filter-btn px-3 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-blue-300 hover:text-blue-700 bg-white transition flex items-center space-x-1.5" data-filter="licensed">
+          <span class="text-blue-600">✓</span>
+          <span>Licensed Only</span>
+        </button>
+
+        <!-- Has Last Sold Toggle -->
+        <button id="filterLastSoldBtn" class="quick-filter-btn px-3 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-amber-300 hover:text-amber-700 bg-white transition flex items-center space-x-1.5" data-filter="lastSold">
+          <span>🏠</span>
+          <span>Has Last Sold Record</span>
+        </button>
+
+        <!-- High Confidence Toggle -->
+        <button id="filterConfidenceBtn" class="quick-filter-btn px-3 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-purple-300 hover:text-purple-700 bg-white transition flex items-center space-x-1.5" data-filter="highConfidence">
+          <span>⭐</span>
+          <span>High Confidence</span>
+        </button>
+
+        <!-- Hide Junk/Test (Active by default) -->
+        <button id="filterHideJunkBtn" class="quick-filter-btn active px-3 py-1.5 rounded-full border border-rose-200 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 transition flex items-center space-x-1.5 ml-auto" data-filter="hideJunk">
+          <span>🛡️</span>
+          <span>Hide Test/Junk (On)</span>
+        </button>
+      </div>
+
+      <!-- Advanced Row: State, City, Sorting & Reset -->
+      <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-slate-100">
+        
+        <!-- State / Province Dropdown -->
+        <div>
+          <label for="stateSelect" class="block text-xs font-medium text-slate-500 mb-1">State / Province</label>
+          <select id="stateSelect" class="w-full text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">All States / Provinces</option>
+          </select>
+        </div>
+
+        <!-- City Dropdown -->
+        <div>
+          <label for="citySelect" class="block text-xs font-medium text-slate-500 mb-1">Operating City</label>
+          <select id="citySelect" class="w-full text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">All Cities</option>
+          </select>
+        </div>
+
+        <!-- Sort By -->
+        <div>
+          <label for="sortSelect" class="block text-xs font-medium text-slate-500 mb-1">Sort Results</label>
+          <select id="sortSelect" class="w-full text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="default">Default Order</option>
+            <option value="name_asc">Name (A → Z)</option>
+            <option value="name_desc">Name (Z → A)</option>
+            <option value="last_sold_desc">Most Recent Last Sold</option>
+            <option value="confidence_high">Highest Confidence First</option>
+          </select>
+        </div>
+
+        <!-- Reset & Export Actions -->
+        <div class="flex items-end space-x-2">
+          <button id="resetFiltersBtn" class="flex-1 py-2 px-3 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-100 transition flex items-center justify-center space-x-1" title="Reset all search queries and filters">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            <span>Reset</span>
+          </button>
+          <button id="exportCsvBtn" class="flex-1 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-xs font-medium transition shadow-sm flex items-center justify-center space-x-1" title="Export current filtered results to CSV">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <span>CSV</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Live Metrics Counter Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5 px-1 text-xs text-slate-500">
+      <div class="flex items-center space-x-3">
+        <span class="font-bold text-slate-800 text-sm">
+          Showing <span id="displayedCount" class="text-blue-600">0</span> of <span id="totalCount">0</span> realtors
+        </span>
+        <span class="text-slate-300">|</span>
+        <span class="inline-flex items-center text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-medium">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+          <span id="metricActiveCount">0</span> Active
+        </span>
+        <span class="inline-flex items-center text-blue-700 bg-blue-50 px-2 py-0.5 rounded font-medium">
+          <span id="metricPhoneCount">0</span> with Mobile
+        </span>
+        <span class="inline-flex items-center text-amber-700 bg-amber-50 px-2 py-0.5 rounded font-medium">
+          <span id="metricLastSoldCount">0</span> with Sold Records
+        </span>
+      </div>
+
+      <!-- Pagination Size Selector -->
+      <div class="flex items-center space-x-2">
+        <label for="pageSizeSelect" class="text-slate-500">Per page:</label>
+        <select id="pageSizeSelect" class="bg-white border border-slate-200 rounded p-1 text-slate-700 text-xs font-medium">
+          <option value="12">12</option>
+          <option value="24" selected>24</option>
+          <option value="48">48</option>
+          <option value="96">96</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Cards Grid -->
+    <div id="realtorGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <!-- Realtor cards injected by app.js -->
+    </div>
+
+    <!-- Loading Skeleton State -->
+    <div id="loadingState" class="hidden py-16 text-center">
+      <div class="inline-block animate-spin-sync w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full mb-3"></div>
+      <p class="text-sm font-semibold text-slate-700">Fetching live data from Google Sheet...</p>
+      <p class="text-xs text-slate-400 mt-1">Parsing 1,460+ realtor profiles &amp; transactions</p>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden py-16 text-center bg-white rounded-2xl border border-slate-200 p-8 my-6">
+      <div class="text-4xl mb-3">🔍</div>
+      <h3 class="text-lg font-bold text-slate-800">No realtors match your search</h3>
+      <p class="text-sm text-slate-500 mt-1 max-w-md mx-auto">Try adjusting your search terms, removing specific filters, or checking the "Hide Test/Junk" toggle.</p>
+      <button id="clearAllFiltersBtn" class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-lg transition shadow-sm">
+        Reset All Filters
+      </button>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div id="paginationContainer" class="mt-8 flex items-center justify-between border-t border-slate-200 pt-5 pb-8">
+      <button id="prevPageBtn" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs transition">
+        ← Previous
+      </button>
+      <div id="paginationInfo" class="text-xs font-medium text-slate-600">
+        Page <span id="currentPageNum" class="font-bold text-slate-900">1</span> of <span id="totalPagesNum" class="font-bold text-slate-900">1</span>
+      </div>
+      <button id="nextPageBtn" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs transition">
+        Next →
+      </button>
+    </div>
+
+  </main>
+
+  <!-- Realtor Detailed Modal -->
+  <div id="detailModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div id="modalBox" class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-200 transform transition-all duration-200">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div id="modalAvatar" class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-base shadow"></div>
+          <div>
+            <h2 id="modalName" class="text-lg font-bold leading-tight">Realtor Name</h2>
+            <p id="modalBrokerage" class="text-xs text-slate-300">Brokerage Name</p>
+          </div>
+        </div>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-700 transition" title="Close modal (Esc)">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div id="modalBody" class="p-6 max-h-[75vh] overflow-y-auto space-y-5 text-sm">
+        <!-- Content filled dynamically -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+        <span id="modalMeta" class="text-xs text-slate-500 font-mono">ID: --</span>
+        <button id="modalCloseActionBtn" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-16 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center space-x-2 text-xs font-medium pointer-events-none">
+    <span id="toastIcon">📋</span>
+    <span id="toastMessage">Copied to clipboard</span>
+  </div>
+
+  <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <p>RealtorScope &bull; Real-time Prospecting &amp; Realtor Directory</p>
+      <p class="text-slate-400">Data linked live with Google Sheet &bull; Hosted on GitHub Pages</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
+
